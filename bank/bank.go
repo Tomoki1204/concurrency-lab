@@ -82,6 +82,13 @@ func (bank *bank) lockAccount(accountNumber int, lockedBy string) {
 	bank.unlock()
 }
 
+func (bank *bank) AccountLocked(accountNumber int, excecuorId int) bool{
+	bank.lock("Executor" + strconv.Itoa(excecuorId))
+	locked := bank.accounts[accountNumber].locked
+	bank.unlock()
+	return locked
+}
+
 // unlockAccount unlocks the account mutex.
 // Call this function after every transaction.
 func (bank *bank) unlockAccount(accountNumber int, lockedBy string) {

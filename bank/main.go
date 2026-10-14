@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
+	"strconv"
 )
 
 var debug *bool
@@ -21,17 +22,21 @@ func executor(bank *bank, executorId int, transactionQueue <-chan transaction, d
 		fmt.Println("Executor\t", executorId, "attempting transaction from", from, "to", to)
 		e := bank.addInProgress(t, executorId) // Removing this line will break visualisations.
 
-		// bank.lockAccount(t.from, strconv.Itoa(executorId))
-		// fmt.Println("Executor\t", executorId, "locked account", from)
-		// bank.lockAccount(t.to, strconv.Itoa(executorId))
-		// fmt.Println("Executor\t", executorId, "locked account", to)
+		if(!bank.AccountLocked(t.from, executorId) || !bank.AccountLocked(t.to, executorId)){
+	
+			bank.lockAccount(t.from, strconv.Itoa(executorId))
+			fmt.Println("Executor\t", executorId, "locked account", from)
+			bank.lockAccount(t.to, strconv.Itoa(executorId))
+			fmt.Println("Executor\t", executorId, "locked account", to)
 
-		bank.execute(t, executorId)
+			bank.execute(t, executorId)
+		
+			bank.unlockAccount(t.from, strconv.Itoa(executorId))
+			fmt.Println("Executor\t", executorId, "unlocked account", from)
+			bank.unlockAccount(t.to, strconv.Itoa(executorId))
+			fmt.Println("Executor\t", executorId, "unlocked account", to)
 
-		// bank.unlockAccount(t.from, strconv.Itoa(executorId))
-		// fmt.Println("Executor\t", executorId, "unlocked account", from)
-		// bank.unlockAccount(t.to, strconv.Itoa(executorId))
-		// fmt.Println("Executor\t", executorId, "unlocked account", to)
+		}
 
 		bank.removeCompleted(e, executorId) // Removing this line will break visualisations.
 		done <- true
@@ -74,14 +79,18 @@ func main() {
 
 	done := make(chan bool)
 
-	for i := 0; i < bankSize; i++ {
+	for i := 0; i < 3; i++ {
 		go executor(&bank, i, transactionQueue, done)
 	}
 
 	for total := 0; total < transactions; total++ {
 		fmt.Println("Completed transactions\t", total)
 		<-done
+		if(total +1 == transactions){
+			transactionQueue = nil
+		}
 	}
+
 
 	fmt.Println()
 	fmt.Println("Expected transferred", expectedMoneyTransferred)
